@@ -1,12 +1,11 @@
 # vim: tw=79
-import vim
-
 from bdb import Breakpoint
 from itertools import starmap
 from linecache import checkcache
-from pudb.settings import (
-    load_breakpoints, save_breakpoints, get_breakpoints_file_name)
+
+import vim
 from pudb import NUM_VERSION
+from pudb.settings import get_breakpoints_file_name, load_breakpoints, save_breakpoints
 
 LOAD_ARGS = () if NUM_VERSION >= (2013, 1) else (None,)
 
@@ -27,40 +26,41 @@ def breakpoint_dict():
     return {(bp.file, bp.line): bp for bp in breakpoints()}
 
 
-def breakpoint_strings(empty_cond_str='<condition not set>'):
+def breakpoint_strings(empty_cond_str="<condition not set>"):
     """
     :return: A generator over the saved breakpoints as strings in the format:
         "filename:linenr:condition"
     :rtype: generator(str)
     """
     return (
-        '{file}:{line:d}:{cond}'.format(
+        "{file}:{line:d}:{cond}".format(
             file=bp.file,
             line=bp.line,
-            cond=bp.cond if bp.cond else empty_cond_str)
+            cond=bp.cond if bp.cond else empty_cond_str,
+        )
         for bp in breakpoints()
     )
 
 
 def update_breakpoints():
-    vim.eval('sign_unplace(g:pudb_sign_group)')
+    vim.eval("sign_unplace(g:pudb_sign_group)")
     for bp in breakpoints():
         try:
             options = '{{"lnum": {line:d}, "priority": {prio:d}}}'.format(
                 line=bp.line,
-                prio=vim.vars['pudb_priority'],
+                prio=vim.vars["pudb_priority"],
             )
 
             # Critical to use vim.eval here instead of vim.vars[] to get sign
             # group, since vim.vars[] will render the string as
             # "b'pudb_sign_group'" instead of "pudb_sign_group"
             vim.eval(
-                'sign_place(0, "{group}", "PudbBreakPoint", "{file}", {opts})'
-                .format(
-                    group=vim.eval('g:pudb_sign_group'),
+                'sign_place(0, "{group}", "PudbBreakPoint", "{file}", {opts})'.format(
+                    group=vim.eval("g:pudb_sign_group"),
                     file=bp.file,
                     opts=options,
-                ))
+                )
+            )
         except vim.error:
             # Buffer for the given file isn't loaded.
             continue
@@ -105,13 +105,13 @@ def edit_condition():
         bps[bp_key] = Breakpoint(*bp_key)
     bp = bps[bp_key]
 
-    old_cond = '' if bp.cond is None else bp.cond
+    old_cond = "" if bp.cond is None else bp.cond
     vim.command('echo "Current condition: {}"'.format(old_cond))
-    vim.command('echohl Question')
-    vim.eval('inputsave()')
+    vim.command("echohl Question")
+    vim.eval("inputsave()")
     bp.cond = vim.eval('input("New Condition: ", "{}")'.format(old_cond))
-    vim.eval('inputrestore()')
-    vim.command('echohl None')
+    vim.eval("inputrestore()")
+    vim.command("echohl None")
 
     save_breakpoints(bps.values())
     update_breakpoints()
@@ -131,11 +131,11 @@ def move_breakpoint():
     bp = bps[bp_key]
     old_line = bp.line
     vim.command('echo "Current line: {}"'.format(old_line))
-    vim.command('echohl Question')
-    vim.eval('inputsave()')
-    new_line = (vim.eval('input("New line: ", "{}")'.format(old_line)))
-    vim.eval('inputrestore()')
-    vim.command('echohl None')
+    vim.command("echohl Question")
+    vim.eval("inputsave()")
+    new_line = vim.eval('input("New line: ", "{}")'.format(old_line))
+    vim.eval("inputrestore()")
+    vim.command("echohl None")
 
     try:
         bp.line = int(new_line)
@@ -151,7 +151,7 @@ def edit_breakpoint_file():
     """
     Open the breakpoint file in a buffer for direct editing.
     """
-    vim.command('edit {}'.format(get_breakpoints_file_name()))
+    vim.command("edit {}".format(get_breakpoints_file_name()))
 
 
 def clear_all_breakpoints():
@@ -180,10 +180,12 @@ def populate_list(list_command):
     """
     update_breakpoints()
     bps = list(breakpoint_strings())
-    vim.command('{command} {breakpoints}'.format(
-        command=list_command,
-        breakpoints=bps,
-    ))
+    vim.command(
+        "{command} {breakpoints}".format(
+            command=list_command,
+            breakpoints=bps,
+        )
+    )
 
 
 def quickfix_list_arg():
@@ -193,9 +195,9 @@ def quickfix_list_arg():
     """
     return [
         {
-            'filename': bp.file,
-            'lnum': bp.line,
-            'text': bp.cond if bp.cond else '',
+            "filename": bp.file,
+            "lnum": bp.line,
+            "text": bp.cond if bp.cond else "",
         }
         for bp in breakpoints()
     ]
@@ -205,22 +207,22 @@ def quickfix_list():
     """
     Populate the quickfix list with the breakpoint locations.
     """
-    setqflist = vim.Function('setqflist')
+    setqflist = vim.Function("setqflist")
     entries = quickfix_list_arg()
     setqflist(entries)
     height = min(10, len(entries))
-    vim.command('cwindow {}'.format(height))
+    vim.command("cwindow {}".format(height))
 
 
 def location_list():
     """
     Populate the location list with the breakpoint locations.
     """
-    setloclist = vim.Function('setloclist')
+    setloclist = vim.Function("setloclist")
     entries = quickfix_list_arg()
     setloclist(entries)
     height = min(10, len(entries))
-    vim.command('cwindow {}'.format(height))
+    vim.command("cwindow {}".format(height))
 
 
 def clear_linecache():
